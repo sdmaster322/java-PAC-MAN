@@ -3,6 +3,7 @@ package pacman;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
@@ -22,28 +23,79 @@ public class Main extends Application {
     private Label scoreLabel;
     private Label livesLabel;
     private Label levelLabel;
+    private Stage primaryStage;
+    private MenuScreen menuScreen;
+    private BorderPane gameRoot;
+    private Scene menuScene;
+    private Scene gameScene;
+    
+    // Game settings from menu
+    private int selectedMap = 0;
+    private int selectedCharacter = 0;
+    private int difficulty = 1;
     
     @Override
     public void start(Stage primaryStage) {
-        BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: black;");
+        this.primaryStage = primaryStage;
+        
+        // Create menu screen
+        menuScreen = new MenuScreen(this);
+        menuScene = new Scene(menuScreen);
+        menuScene.setFill(Color.BLACK);
+        
+        // Setup menu key handling
+        menuScene.setOnKeyPressed(event -> {
+            switch (event.getCode()) {
+                case ENTER:
+                    startGameWithSettings(selectedMap, selectedCharacter, difficulty);
+                    break;
+                case ESCAPE:
+                    primaryStage.close();
+                    break;
+                default:
+                    break;
+            }
+        });
+        
+        primaryStage.setTitle("PAC-MAN - JavaFX");
+        primaryStage.setScene(menuScene);
+        primaryStage.setResizable(false);
+        primaryStage.show();
+    }
+    
+    /**
+     * Start the game with selected settings from menu
+     */
+    public void startGameWithSettings(int mapIndex, int characterIndex, int difficultyLevel) {
+        this.selectedMap = mapIndex;
+        this.selectedCharacter = characterIndex;
+        this.difficulty = difficultyLevel;
+        
+        // Stop menu animation
+        if (menuScreen != null) {
+            menuScreen.stopAnimation();
+        }
+        
+        // Create game screen
+        gameRoot = new BorderPane();
+        gameRoot.setStyle("-fx-background-color: black;");
         
         // Create header with score and lives
         VBox header = createHeader();
-        root.setTop(header);
+        gameRoot.setTop(header);
         
-        // Create game board
-        GameBoard gameBoard = new GameBoard();
-        root.setCenter(gameBoard);
+        // Create game board with selected map
+        GameBoard gameBoard = new GameBoard(mapIndex);
+        gameRoot.setCenter(gameBoard);
         
-        // Create game controller
-        gameController = new GameController(gameBoard, this);
+        // Create game controller with settings
+        gameController = new GameController(gameBoard, this, characterIndex, difficultyLevel);
         
-        Scene scene = new Scene(root);
-        scene.setFill(Color.BLACK);
+        gameScene = new Scene(gameRoot);
+        gameScene.setFill(Color.BLACK);
         
         // Handle keyboard input
-        scene.setOnKeyPressed(event -> {
+        gameScene.setOnKeyPressed(event -> {
             switch (event.getCode()) {
                 case UP:
                 case W:
@@ -68,6 +120,41 @@ public class Main extends Application {
                     gameController.restartGame();
                     break;
                 case ESCAPE:
+                    returnToMenu();
+                    break;
+                case M:
+                    returnToMenu();
+                    break;
+                default:
+                    break;
+            }
+        });
+        
+        primaryStage.setScene(gameScene);
+        
+        // Start the game
+        gameController.startGame();
+    }
+    
+    /**
+     * Return to main menu
+     */
+    public void returnToMenu() {
+        if (gameController != null) {
+            gameController.stopGame();
+        }
+        
+        // Create new menu screen
+        menuScreen = new MenuScreen(this);
+        menuScene = new Scene(menuScreen);
+        menuScene.setFill(Color.BLACK);
+        
+        menuScene.setOnKeyPressed(event -> {
+            switch (event.getCode()) {
+                case ENTER:
+                    startGameWithSettings(selectedMap, selectedCharacter, difficulty);
+                    break;
+                case ESCAPE:
                     primaryStage.close();
                     break;
                 default:
@@ -75,13 +162,7 @@ public class Main extends Application {
             }
         });
         
-        primaryStage.setTitle("PAC-MAN - JavaFX");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(false);
-        primaryStage.show();
-        
-        // Start the game
-        gameController.startGame();
+        primaryStage.setScene(menuScene);
     }
     
     private VBox createHeader() {

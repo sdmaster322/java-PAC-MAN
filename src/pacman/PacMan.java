@@ -25,12 +25,20 @@ public class PacMan {
     private double moveProgress = 0;
     private boolean moving = false;
     
+    // Appearance
+    private Color pacManColor = Color.YELLOW;
+    
     // Starting position
     public static final int START_TILE_X = 14;
     public static final int START_TILE_Y = 23;
     
     public PacMan(GameBoard gameBoard) {
+        this(gameBoard, Color.YELLOW);
+    }
+    
+    public PacMan(GameBoard gameBoard, Color color) {
         this.gameBoard = gameBoard;
+        this.pacManColor = color;
         reset();
     }
     
@@ -138,7 +146,7 @@ public class PacMan {
         if (!alive) {
             // Death animation - Pac-Man shrinking/disappearing
             double shrinkFactor = Math.max(0, 1 - deathAnimationFrame / 30.0);
-            gc.setFill(Color.YELLOW);
+            gc.setFill(pacManColor);
             double deathAngle = deathAnimationFrame * 6;
             gc.fillArc(centerX - radius * shrinkFactor, 
                       centerY - radius * shrinkFactor,
@@ -150,7 +158,7 @@ public class PacMan {
             return;
         }
         
-        gc.setFill(Color.YELLOW);
+        gc.setFill(pacManColor);
         
         // Calculate rotation based on direction
         double startAngle = mouthAngle;

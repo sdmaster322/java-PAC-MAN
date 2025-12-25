@@ -19,65 +19,49 @@ public class GameBoard extends Canvas {
     // 5 = empty (no dot)
     private int[][] maze;
     private int[][] originalMaze;
+    private int currentMapIndex;
     
-    //  maze layout
-    private static final int[][] MAZE_TEMPLATE = {
-        {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-        {1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-        {1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1},
-        {1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1},
-        {1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1},
-        {1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
-        {1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1},
-        {1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1},
-        {1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1},
-        {1,1,1,1,1,1,2,1,1,1,1,1,5,1,1,5,1,1,1,1,1,2,1,1,1,1,1,1},
-        {5,5,5,5,5,1,2,1,1,1,1,1,5,1,1,5,1,1,1,1,1,2,1,5,5,5,5,5},
-        {5,5,5,5,5,1,2,1,1,5,5,5,5,5,5,5,5,5,5,1,1,2,1,5,5,5,5,5},
-        {5,5,5,5,5,1,2,1,1,5,1,1,1,4,4,1,1,1,5,1,1,2,1,5,5,5,5,5},
-        {1,1,1,1,1,1,2,1,1,5,1,5,5,5,5,5,5,1,5,1,1,2,1,1,1,1,1,1},
-        {5,5,5,5,5,5,2,5,5,5,1,5,5,5,5,5,5,1,5,5,5,2,5,5,5,5,5,5},
-        {1,1,1,1,1,1,2,1,1,5,1,5,5,5,5,5,5,1,5,1,1,2,1,1,1,1,1,1},
-        {5,5,5,5,5,1,2,1,1,5,1,1,1,1,1,1,1,1,5,1,1,2,1,5,5,5,5,5},
-        {5,5,5,5,5,1,2,1,1,5,5,5,5,5,5,5,5,5,5,1,1,2,1,5,5,5,5,5},
-        {5,5,5,5,5,1,2,1,1,5,1,1,1,1,1,1,1,1,5,1,1,2,1,5,5,5,5,5},
-        {1,1,1,1,1,1,2,1,1,5,1,1,1,1,1,1,1,1,5,1,1,2,1,1,1,1,1,1},
-        {1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1},
-        {1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1},
-        {1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1},
-        {1,3,2,2,1,1,2,2,2,2,2,2,2,5,5,2,2,2,2,2,2,2,1,1,2,2,3,1},
-        {1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1},
-        {1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1},
-        {1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1},
-        {1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1},
-        {1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1},
-        {1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1},
-        {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
-    };
+    //  maze layout (kept for backwards compatibility)
+    private static final int[][] MAZE_TEMPLATE = MapTemplates.CLASSIC;
     
     private int dotsRemaining;
     private int totalDots;
     
     public GameBoard() {
+        this(0); // Default to classic map
+    }
+    
+    public GameBoard(int mapIndex) {
         super(BOARD_WIDTH * TILE_SIZE, BOARD_HEIGHT * TILE_SIZE);
+        this.currentMapIndex = mapIndex;
         initMaze();
     }
     
     public void initMaze() {
+        int[][] template = MapTemplates.getMap(currentMapIndex);
         maze = new int[BOARD_HEIGHT][BOARD_WIDTH];
         originalMaze = new int[BOARD_HEIGHT][BOARD_WIDTH];
         dotsRemaining = 0;
         
         for (int y = 0; y < BOARD_HEIGHT; y++) {
             for (int x = 0; x < BOARD_WIDTH; x++) {
-                maze[y][x] = MAZE_TEMPLATE[y][x];
-                originalMaze[y][x] = MAZE_TEMPLATE[y][x];
+                maze[y][x] = template[y][x];
+                originalMaze[y][x] = template[y][x];
                 if (maze[y][x] == 2 || maze[y][x] == 3) {
                     dotsRemaining++;
                 }
             }
         }
         totalDots = dotsRemaining;
+    }
+    
+    public void setMapIndex(int mapIndex) {
+        this.currentMapIndex = mapIndex;
+        initMaze();
+    }
+    
+    public int getMapIndex() {
+        return currentMapIndex;
     }
     
     public void resetMaze() {
@@ -238,7 +222,12 @@ public class GameBoard extends Canvas {
         } else {
             gc.setFill(Color.WHITE);
         }
-        gc.fillText("Press R to Restart", centerX, centerY + 90);
+        gc.fillText("Press R to Restart", centerX, centerY + 80);
+        
+        // Menu instruction
+        gc.setFill(Color.GRAY);
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.NORMAL, 14));
+        gc.fillText("Press ESC or M to return to Menu", centerX, centerY + 110);
         
         // Reset text alignment for other rendering
         gc.setTextAlign(javafx.scene.text.TextAlignment.LEFT);

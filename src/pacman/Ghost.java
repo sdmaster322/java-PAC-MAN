@@ -54,7 +54,9 @@ public class Ghost {
     private int ghostHouseTimer = 0;
     
     // Movement
+    private double baseSpeed = 1.5;
     private double speed = 1.5;
+    private double speedMultiplier = 1.0;
     private double moveProgress = 0;
     
     // Animation
@@ -62,9 +64,15 @@ public class Ghost {
     private boolean blinking = false;
     
     public Ghost(GhostType type, GameBoard gameBoard) {
+        this(type, gameBoard, 1.0);
+    }
+    
+    public Ghost(GhostType type, GameBoard gameBoard, double speedMultiplier) {
         this.type = type;
         this.gameBoard = gameBoard;
         this.random = new Random();
+        this.speedMultiplier = speedMultiplier;
+        this.speed = baseSpeed * speedMultiplier;
         reset();
     }
     
@@ -80,6 +88,7 @@ public class Ghost {
         this.moveProgress = 0;
         this.inGhostHouse = true;
         this.ghostHouseTimer = getGhostHouseDelay();
+        this.speed = baseSpeed * speedMultiplier;
     }
     
     private int getGhostHouseDelay() {

@@ -3,6 +3,7 @@ package pacman;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
+import javafx.scene.paint.Color;
 
 /**
  * Main game controller handling game logic, timing, and state management
@@ -25,6 +26,11 @@ public class GameController {
     private int level = 1;
     private int ghostsEatenCombo = 0;
     
+    // Game settings
+    private int characterIndex = 0;
+    private int difficulty = 1; // 0=Easy, 1=Normal, 2=Hard
+    private Color pacManColor = Color.YELLOW;
+    
     // Points
     private static final int DOT_POINTS = 10;
     private static final int POWER_PELLET_POINTS = 50;
@@ -34,19 +40,61 @@ public class GameController {
     private long lastUpdate = 0;
     private static final long FRAME_TIME = 16_666_667; // ~60 FPS in nanoseconds
     
+    /**
+     * Original constructor for backwards compatibility
+     */
     public GameController(GameBoard gameBoard, Main mainApp) {
+        this(gameBoard, mainApp, 0, 1);
+    }
+    
+    /**
+     * Constructor with game settings
+     */
+    public GameController(GameBoard gameBoard, Main mainApp, int characterIndex, int difficulty) {
         this.gameBoard = gameBoard;
         this.mainApp = mainApp;
+        this.characterIndex = characterIndex;
+        this.difficulty = difficulty;
+        this.pacManColor = MenuScreen.CHARACTER_COLORS[characterIndex];
+        
+        // Adjust lives based on difficulty
+        switch (difficulty) {
+            case 0: // Easy
+                lives = 5;
+                break;
+            case 1: // Normal
+                lives = 3;
+                break;
+            case 2: // Hard
+                lives = 2;
+                break;
+        }
+        
         initGame();
     }
     
     private void initGame() {
-        pacMan = new PacMan(gameBoard);
+        pacMan = new PacMan(gameBoard, pacManColor);
         ghosts = new Ghost[4];
-        ghosts[0] = new Ghost(Ghost.GhostType.BLINKY, gameBoard);
-        ghosts[1] = new Ghost(Ghost.GhostType.PINKY, gameBoard);
-        ghosts[2] = new Ghost(Ghost.GhostType.INKY, gameBoard);
-        ghosts[3] = new Ghost(Ghost.GhostType.CLYDE, gameBoard);
+        
+        // Adjust ghost speed based on difficulty
+        double ghostSpeedMultiplier = 1.0;
+        switch (difficulty) {
+            case 0: // Easy
+                ghostSpeedMultiplier = 0.7;
+                break;
+            case 1: // Normal
+                ghostSpeedMultiplier = 1.0;
+                break;
+            case 2: // Hard
+                ghostSpeedMultiplier = 1.3;
+                break;
+        }
+        
+        ghosts[0] = new Ghost(Ghost.GhostType.BLINKY, gameBoard, ghostSpeedMultiplier);
+        ghosts[1] = new Ghost(Ghost.GhostType.PINKY, gameBoard, ghostSpeedMultiplier);
+        ghosts[2] = new Ghost(Ghost.GhostType.INKY, gameBoard, ghostSpeedMultiplier);
+        ghosts[3] = new Ghost(Ghost.GhostType.CLYDE, gameBoard, ghostSpeedMultiplier);
         
         createGameLoop();
     }
@@ -77,6 +125,7 @@ public class GameController {
         running = true;
         gameLoop.start();
         render();
+        SoundManager.getInstance().play(SoundManager.GAME_START);
     }
     
     public void stopGame() {
@@ -135,10 +184,12 @@ public class GameController {
             gameBoard.eatDot(px, py);
             score += DOT_POINTS;
             mainApp.updateScore(score);
+            SoundManager.getInstance().play(SoundManager.CHOMP);
         } else if (gameBoard.isPowerPellet(px, py)) {
             gameBoard.eatDot(px, py);
             score += POWER_PELLET_POINTS;
             mainApp.updateScore(score);
+            SoundManager.getInstance().play(SoundManager.POWER_PELLET);
             activatePowerMode();
         }
         
@@ -183,9 +234,11 @@ public class GameController {
                     score += points;
                     ghostsEatenCombo++;
                     mainApp.updateScore(score);
+                    SoundManager.getInstance().play(SoundManager.EAT_GHOST);
                 } else if (!ghost.isEaten()) {
                     // Pac-Man dies
                     pacMan.die();
+                    SoundManager.getInstance().play(SoundManager.DEATH);
                 }
             }
             
@@ -199,8 +252,10 @@ public class GameController {
                     score += points;
                     ghostsEatenCombo++;
                     mainApp.updateScore(score);
+                    SoundManager.getInstance().play(SoundManager.EAT_GHOST);
                 } else if (!ghost.isEaten()) {
                     pacMan.die();
+                    SoundManager.getInstance().play(SoundManager.DEATH);
                 }
             }
         }
@@ -225,6 +280,9 @@ public class GameController {
     private void nextLevel() {
         level++;
         mainApp.updateLevel(level);
+        
+        // Play level complete sound
+        SoundManager.getInstance().play(SoundManager.LEVEL_COMPLETE);
         
         // Reset board with all dots
         gameBoard.resetMaze();
